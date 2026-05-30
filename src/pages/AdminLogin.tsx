@@ -2,21 +2,23 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 export default function AdminLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/admin/dashboard');
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
@@ -38,7 +40,7 @@ export default function AdminLogin() {
           </div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Admin Portal</h1>
           <p className="text-slate-500 text-sm text-center mt-2 font-light">
-            Sign in with an authorized Google account to manage Ghania Style collections. (Limited to registered admins)
+            Sign in with an authorized account to manage Ghania Style collections.
           </p>
         </div>
 
@@ -48,17 +50,47 @@ export default function AdminLogin() {
           </div>
         )}
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="w-full py-3.5 px-4 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-800/30 transition-all duration-300 disabled:opacity-70 flex justify-center items-center gap-2 tracking-wide"
-        >
-          {loading ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-          ) : (
-            'Sign In With Google'
-          )}
-        </button>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-ghania-200 outline-none focus:border-ghania-400 focus:ring-2 focus:ring-ghania-200 transition-all font-mono text-ghania-400"
+              placeholder="admin@example.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-ghania-200 outline-none focus:border-ghania-400 focus:ring-2 focus:ring-ghania-200 transition-all font-mono tracking-widest text-ghania-400"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 px-4 bg-ghania-400 text-white rounded-xl font-semibold hover:bg-ghania-300 hover:shadow-lg hover:shadow-ghania-300/30 transition-all duration-300 disabled:opacity-70 flex justify-center items-center gap-2 tracking-wide"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              'Masuk Dashboard'
+            )}
+          </button>
+        </form>
 
         <div className="mt-8 pt-6 border-t border-gray-100 flex justify-center">
           <button 
