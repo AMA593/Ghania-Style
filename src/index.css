@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ghania-100: #FFE6E6;
+  --color-ghania-200: #E1AFD1;
+  --color-ghania-300: #AD88C6;
+  --color-ghania-400: #7469B6;
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

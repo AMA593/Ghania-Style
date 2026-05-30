@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && 
+             request.auth.token.email in ['ahmadmaiyah35@gmail.com', 'admin2@gmail.com'] && 
+             request.auth.token.email_verified == true;
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    
+    // Product validation
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'category']) 
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+          && data.price is number
+          && data.category is string && data.category.size() <= 100
+          && (data.get('description', '') is string && data.get('description', '').size() <= 2000)
+          && (data.get('imageUrl', '') is string && data.get('imageUrl', '').size() <= 1000)
+          && (data.get('affiliateLink', '') is string && data.get('affiliateLink', '').size() <= 1000);
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+                    && isValidId(productId)
+                    && isValidProduct(incoming())
+                    && incoming().createdAt == request.time;
+      // Admin update overrides
+      allow update: if isAdmin()
+                    && isValidId(productId)
+                    && isValidProduct(incoming())
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+  }
+}
