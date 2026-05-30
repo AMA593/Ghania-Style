@@ -4,8 +4,7 @@ import { Plus, Edit2, Trash2, LogOut, Image as ImageIcon, Link as LinkIcon, Doll
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import type { Product } from '../types';
 
 export default function AdminDashboard() {
@@ -26,8 +25,6 @@ export default function AdminDashboard() {
     imageUrl: '',
     affiliateLink: ''
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -93,41 +90,18 @@ export default function AdminDashboard() {
         affiliateLink: ''
       });
     }
-    setImageFile(null);
     setIsModalOpen(true);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setFormData(prev => ({
-        ...prev,
-        imageUrl: URL.createObjectURL(file) // temporary preview URL
-      }));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
+    const payload = {
+      ...formData,
+      price: parseFloat(formData.price)
+    };
+
     try {
-      let finalImageUrl = formData.imageUrl;
-      
-      // Upload image to Firebase Storage if a new file is selected
-      if (imageFile) {
-        const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
-        finalImageUrl = await getDownloadURL(snapshot.ref);
-      }
-
-      const payload = {
-        ...formData,
-        imageUrl: finalImageUrl,
-        price: parseFloat(formData.price)
-      };
-
       if (editingProduct) {
         const productRef = doc(db, 'products', editingProduct.id.toString());
         await updateDoc(productRef, {
@@ -143,13 +117,10 @@ export default function AdminDashboard() {
       }
       
       setIsModalOpen(false);
-      setImageFile(null);
       fetchProducts();
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan. Pastikan aturan Storage dan Firestore Firebase anda mengizinkan operasi ini.');
-    } finally {
-      setIsSubmitting(false);
+      alert('Terjadi kesalahan. Pastikan aturan Firebase anda mengizinkan operasi ini.');
     }
   };
 
@@ -394,24 +365,23 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Cover Foto</label>
-                  <label className="relative flex cursor-pointer items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 hover:border-ghania-400 transition-colors">
-                    <div className="flex flex-col items-center">
-                      <ImageIcon size={32} className="text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-500">Pilih dari galeri/file manager</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Cover Foto</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <ImageIcon size={16} className="text-gray-400" />
                     </div>
                     <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      type="url" 
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-ghania-300 focus:border-ghania-400 outline-none transition-shadow"
+                      placeholder="https://.../gambar.jpg"
                     />
-                  </label>
-
+                  </div>
                   {formData.imageUrl && (
-                    <div className="mt-3 relative inline-block">
+                    <div className="mt-3">
                       <p className="text-xs text-gray-500 mb-1">Preview Foto:</p>
-                      <img src={formData.imageUrl} alt="Preview" className="h-32 w-32 object-cover rounded-lg border border-gray-200" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/150?text=Error'} />
+                      <img src={formData.imageUrl} alt="Preview" className="h-24 w-24 object-cover rounded-lg border border-gray-200" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/150?text=Error'} />
                     </div>
                   )}
                 </div>
@@ -437,14 +407,9 @@ export default function AdminDashboard() {
                   </button>
                   <button 
                     type="submit"
-                    disabled={isSubmitting}
-                    className="flex justify-center items-center min-w-[150px] px-6 py-2.5 bg-ghania-400 text-white font-medium rounded-xl hover:bg-ghania-300 focus:ring-4 focus:ring-ghania-400/30 transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex justify-center items-center min-w-[150px] px-6 py-2.5 bg-ghania-400 text-white font-medium rounded-xl hover:bg-ghania-300 focus:ring-4 focus:ring-ghania-400/30 transition-all shadow-md"
                   >
-                    {isSubmitting ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'
-                    )}
+                    {editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
                   </button>
                 </div>
               </form>
